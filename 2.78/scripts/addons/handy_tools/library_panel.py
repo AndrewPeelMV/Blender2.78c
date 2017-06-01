@@ -23,13 +23,23 @@ class Node:
     
     NODE_TYPE = "LIBRARY" #LIBRARY, CATEGORY, ITEM
     
-    width = 0
-    height = 0
+    x = 0
+    y = 0
+    
+    width = 150
+    height = 60
     
     x_location = 0
     y_location = 0
     
-    def __init___(self,x,y,width,height,module="",class_name=""):
+    icon_margin_x = 4
+    icon_margin_y = 4
+    text_margin_x = 6
+
+    text_height = 16
+    text_width = 72
+    
+    def __init__(self,x,y,width,height,module="",class_name=""):
         """ x = x location of the library node in px
             y = y location of the library node in px
             width = width of the library node in px
@@ -78,7 +88,7 @@ class Node:
         bgl.glDisable(bgl.GL_BLEND)
 
         texture.gl_free()
-
+        
         # draw some text
         font_id = 0
         blf.position(font_id,
@@ -97,19 +107,71 @@ class Node:
         """
         pass
     
+class Button:
+    
+    command = None
+    
+    width = 150
+    height = 60
+    
+    x_location = 0
+    y_location = 350
+    
+    def __init__(self,):
+        pass
+    
+    def draw(self, highlighted: bool):
+        bgl.glEnable(bgl.GL_BLEND)
+
+        if highlighted:
+            bgl.glColor4f(0.555, 0.555, 0.555, 0.8)
+        else:
+            bgl.glColor4f(0.447, 0.447, 0.447, 0.8)   
+
+        #HEADER
+        bgl.glColor4f(0.1, 0.1, 0.1, 1)
+        bgl.glRectf(self.x_location, self.y_location, self.width, self.height)  
+        
+        bgl.glDisable(bgl.GL_BLEND)             
+    
+    def highlighted(self, mouse_x: int, mouse_y: int) -> bool:
+        """ Determines if the mouse is over the node
+        """
+        print(self.x_location < mouse_x < self.x_location + self.width and self.y_location < mouse_y < self.y_location + self.height)
+        return self.x_location < mouse_x < self.x_location + self.width and self.y_location < mouse_y < self.y_location + self.height
+    
+    def clicked(self):
+        """ This is called when the node is clicked
+        """
+        pass
+    
     
 class Library_Panel:
     """ This is the library panel
     """
     
-    width = 200
-    height = 1000
+    mouse_x = 0
+    mouse_y = 0
     
-    x_location = 300
+    width = 400
+    height = 0
+    
+    x_location = 0
     y_location = 0
     
-    def __init__(self,library_path):
-        pass
+    text_height = 16
+    text_width = 72    
+    
+    icon_margin_x = 4
+    icon_margin_y = 4
+    text_margin_x = 6
+    
+    header_height = 45
+    
+    def __init__(self,window_region):
+        content_width = window_region.width
+        content_height = window_region.height
+        self.height = content_height
     
     def draw_back_button(self):
         pass
@@ -120,12 +182,28 @@ class Library_Panel:
     def draw_categories(self):
         pass
     
-    def draw_library(self):
+    def draw_panel(self):
         bgl.glEnable(bgl.GL_BLEND)
+        #PANEL
         bgl.glColor4f(0.0, 0.0, 0.0, 0.1)
         bgl.glRectf(self.x_location, self.y_location, self.width, self.height)
-        bgl.glDisable(bgl.GL_BLEND)     
+        #HEADER
+        bgl.glColor4f(0.1, 0.1, 0.1, 1)
+        bgl.glRectf(self.x_location, self.height-self.header_height, self.width, self.height)  
+              
+        bgl.glDisable(bgl.GL_BLEND)
+        
+        #HEADER TEXT
+        bgl.glColor4f(1, 1, 1, 1)
+        font_id = 0
+        blf.position(font_id,20,self.height-self.text_height-self.icon_margin_y, 0)
+        blf.size(font_id, self.text_height, self.text_width)
+        blf.draw(font_id, "hAndy Tool Library")
     
+    def draw_library(self,mouse_x,mouse_y):
+        self.mouse_x = mouse_x
+        self.mouse_y = mouse_y
+        self.draw_panel()
     
 class OPERATOR_Show_Library(bpy.types.Operator):    
     bl_idname = "handy.show_library"
@@ -141,11 +219,27 @@ class OPERATOR_Show_Library(bpy.types.Operator):
         context.window.cursor_modal_restore()        
         context.area.tag_redraw()    
 
+#QUESTION: I AM NOT SURE WHY THIS IS NEEDED 
+#     @staticmethod
+#     def _window_region(context):
+#         window_regions = [region
+#                           for region in context.area.regions
+#                           if region.type == 'WINDOW']
+#         return window_regions[0]
+
     def draw_menu(self,context):
-        library = Library_Panel(library_path="")
-        library.draw_library()
-        node = Node(x=100,y=0,width=300,height=100)
-        node.draw_node()
+        window_region = [region
+                          for region in context.area.regions
+                          if region.type == 'WINDOW'][0]   
+                    
+        library = Library_Panel(window_region)
+        library.draw_library(mouse_x=self.mouse_x,mouse_y=self.mouse_y)
+        
+        button = Button()
+        button.draw(highlighted=button.highlighted(self.mouse_x, self.mouse_y))        
+        
+#         node = Node(x=100,y=0,width=300,height=100)
+#         node.draw_node()
 
     def invoke(self, context, event):
         self.mouse_x = event.mouse_x
@@ -162,6 +256,12 @@ class OPERATOR_Show_Library(bpy.types.Operator):
         return {'RUNNING_MODAL'}
 
     def modal(self, context, event):
+
+        if 'MOUSE' in event.type:
+            context.area.tag_redraw()
+            self.mouse_x = event.mouse_x
+            self.mouse_y = event.mouse_y
+
         if event.type in {'MIDDLEMOUSE', 'WHEELUPMOUSE', 'WHEELDOWNMOUSE'}:
             return {'PASS_THROUGH'}        
         
