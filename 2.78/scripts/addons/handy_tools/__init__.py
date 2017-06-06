@@ -11,6 +11,7 @@ bl_info = {
 }
 
 from . import library_panel
+from . import handy_properties
 
 def register():
     pass

@@ -21,19 +21,23 @@ ITEM_PADDING_X = 5
 ICON_MARGIN_X = 5
 
 FOLDER_ICON = os.path.join(os.path.dirname(__file__),"icons","folder.png")
-DRAW_WALL_ICON = os.path.join(os.path.dirname(__file__),"icons","draw_walls.png")
+DRAW_NEW_WALL_ICON = os.path.join(os.path.dirname(__file__),"icons","draw_new_wall_64.png")
 
 class Button:
     
     command = None
     
     icon = ""
+    text = ""
     
     width = 200
     height = 50
     
     x_location = 100
     y_location = 350
+    
+    text_height = 16
+    text_width = 72    
     
     def __init__(self,x_location,y_location,width,height):
         self.width = width
@@ -80,6 +84,14 @@ class Button:
     def draw(self, highlighted: bool):
         self.draw_button_boarder(highlighted)
         self.draw_button_icon()
+        
+        # draw some text
+        font_id = 0
+        blf.position(font_id,
+                     self.x_location + ICON_MARGIN_X + ICON_WIDTH + ICON_MARGIN_X,
+                     self.y_location + ICON_HEIGHT * 0.5 - 0.25 * self.text_height, 0)
+        blf.size(font_id, self.text_height, self.text_width)
+        blf.draw(font_id, self.text)
     
     def is_hightlighted(self,mouse_x,mouse_y):
         #TODO: THIS COMMAND NEEDS TO ACCOUNT FOR REGION POSITION
@@ -99,10 +111,10 @@ class Button:
 #         print(self.x_location < mouse_x < self.x_location + self.width and self.y_location < mouse_y < self.y_location + self.height)
 #         return self.x_location < mouse_x < self.x_location + self.width and self.y_location < mouse_y < self.y_location + self.height
     
-    def clicked(self):
+    def clicked(self,context,event):
         """ This is called when the node is clicked
         """
-        self.command()
+        self.command(context,event)
     
 class Library_Panel:
     """ This is the library panel
@@ -215,12 +227,20 @@ class OPERATOR_Show_Library(bpy.types.Operator):
         button_width = 250
         button_spacing = 20
         
-        for i in range(1,10):
-            button = Button(20,window_region.height-library.header_height-(button_spacing+button_height)*i,button_width,button_height)
-            button.command = room_builder.draw_wall
-            button.icon = FOLDER_ICON
-            button.draw(highlighted=button.is_hightlighted(self.mouse_x,self.mouse_y))
-            self.store_button(button)
+        button = Button(10,window_region.height-library.header_height-(button_spacing+button_height),button_width,button_height)
+        button.text = "Draw New Wall"
+        button.command = room_builder.draw_new_wall
+        button.icon = DRAW_NEW_WALL_ICON
+        button.draw(highlighted=button.is_hightlighted(self.mouse_x,self.mouse_y))
+        self.store_button(button)
+        
+#         for i in range(1,10):
+#             button = Button(20,window_region.height-library.header_height-(button_spacing+button_height)*i,button_width,button_height)
+#             button.text = "Draw Walls"
+#             button.command = room_builder.draw_wall
+#             button.icon = FOLDER_ICON
+#             button.draw(highlighted=button.is_hightlighted(self.mouse_x,self.mouse_y))
+#             self.store_button(button)
 
     def store_button(self,button):
         """ keep button so we can remove image
@@ -266,7 +286,7 @@ class OPERATOR_Show_Library(bpy.types.Operator):
         if event.type == 'LEFTMOUSE' and event.value == 'RELEASE':
             button = self.get_clicked()
             if button:
-                button.clicked()
+                button.clicked(context,event)
             else:
                 print("NO BUTTON") 
         

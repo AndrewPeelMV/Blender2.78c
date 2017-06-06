@@ -5,28 +5,7 @@ Created on Jun 1, 2017
 '''
 import bpy
 import bmesh
-
-def hook_vertex_group_to_object(obj_mesh,vertex_group,obj_hook):
-    """ This function adds a hook modifier to the verties 
-        in the vertex_group to the obj_hook
-    """
-    bpy.ops.object.select_all(action = 'DESELECT')
-    obj_hook.hide = False
-    obj_hook.hide_select = False
-    obj_hook.select = True
-    obj_mesh.hide = False
-    obj_mesh.hide_select = False
-    if vertex_group in obj_mesh.vertex_groups:
-        vgroup = obj_mesh.vertex_groups[vertex_group]
-        obj_mesh.vertex_groups.active_index = vgroup.index
-        bpy.context.scene.objects.active = obj_mesh
-        bpy.ops.object.editmode_toggle()
-        bpy.ops.mesh.select_all(action = 'DESELECT')
-        bpy.ops.object.vertex_group_select()
-        if obj_mesh.data.total_vert_sel > 0:
-            bpy.ops.object.hook_add_selob()
-        bpy.ops.mesh.select_all(action = 'DESELECT')
-        bpy.ops.object.editmode_toggle()
+from . import handy_utils
 
 class Assembly:
     
@@ -35,6 +14,30 @@ class Assembly:
     obj_x = None
     obj_y = None
     obj_z = None
+    
+    def __init__(self,obj_bp=None):
+        """ 
+        Assembly Constructor. If you want to create an instance of
+        an existing Assembly then pass in the base point of the assembly 
+        in the obj_bp parameter
+        
+        **Parameters:**
+        
+        * **obj_bp** (bpy.types.object, (optional))
+        
+        **Returns:** None
+        """
+        if obj_bp:
+            self.obj_bp = obj_bp
+            for child in obj_bp.children:
+                if child.mv.type == 'XDIM':
+                    self.obj_x = child
+                if child.mv.type == 'YDIM':
+                    self.obj_y = child
+                if child.mv.type == 'ZDIM':
+                    self.obj_z = child
+                if self.obj_bp and self.obj_x and self.obj_y and self.obj_z:
+                    break    
     
     def create_assembly(self):
         """ 
@@ -109,10 +112,11 @@ class Assembly:
             vg_z_dim = obj_mesh.vertex_groups.new(name="Z Dimension")
             vg_z_dim.add([4,5,6,7],1,'ADD')
             
-            hook_vertex_group_to_object(obj_mesh,"X Dimension",self.obj_x)
-            hook_vertex_group_to_object(obj_mesh,"Y Dimension",self.obj_y)
-            hook_vertex_group_to_object(obj_mesh,"Z Dimension",self.obj_z)
+            handy_utils.hook_vertex_group_to_object(obj_mesh,"X Dimension",self.obj_x)
+            handy_utils.hook_vertex_group_to_object(obj_mesh,"Y Dimension",self.obj_y)
+            handy_utils.hook_vertex_group_to_object(obj_mesh,"Z Dimension",self.obj_z)
             
-            
-            
-            
+class Wall(Assembly):
+    
+    def __init__(self,obj_bp=None):
+        pass
